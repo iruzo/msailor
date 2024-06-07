@@ -90,7 +90,6 @@ mod tests {
     use super::*;
     use std::env;
     use std::fs;
-    use std::io::Write;
 
     #[tokio::test]
     async fn test_sync_repos() {

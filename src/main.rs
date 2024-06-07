@@ -67,4 +67,17 @@ async fn main() {
         Err(e) => eprintln!("Error generating menu content: {}", e),
     }
 
+    // Define the path to the configuration file
+    let config_path = "/path/to/config.cfg";
+
+    // Parse the configuration file
+    match config::parse_config_file(config_path) {
+        Ok(config_map) => {
+            for (key, value) in &config_map {
+                println!("{}: {}", key, value);
+            }
+        },
+        Err(e) => eprintln!("Error parsing config file: {}", e),
+    }
+
 }

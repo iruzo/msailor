@@ -38,7 +38,7 @@ pub fn generate_menu_content(
     }
 
     // Lists
-    if Path::new(&list_path).exists() {
+    if Path::new(list_path).exists() {
         for entry in fs::read_dir(list_path)? {
             let list = entry?.file_name().into_string().unwrap();
             menu_content.push(format!("[list] {}", list));
@@ -66,7 +66,7 @@ pub fn generate_menu_content(
 
     // Plugins
     menu_content.push("".to_string());
-    if Path::new(&plug_path).exists() {
+    if Path::new(plug_path).exists() {
         for entry in fs::read_dir(plug_path)? {
             let file = entry?.file_name().into_string().unwrap();
             menu_content.push(format!("[plug] :{}", file));
@@ -123,7 +123,8 @@ mod tests {
         let sync_repo = sync_path.join("repo1");
         fs::create_dir_all(&sync_repo).unwrap();
         let list_repo_path = sync_repo.join("list");
-        fs::create_dir_all(list_repo_path).unwrap();
+        fs::create_dir_all(&list_repo_path).unwrap();
+        File::create(list_repo_path.join("list1")).unwrap();
         let quickmark_repo_path = sync_repo.join("quickmark");
         let mut quickmark_file = File::create(quickmark_repo_path).unwrap();
         writeln!(quickmark_file, "quickmark1").unwrap();
@@ -154,10 +155,6 @@ mod tests {
             config_path.to_str().unwrap(),
             plug_path.to_str().unwrap()
         ).unwrap();
-
-        for content in &result {
-            println!("{}", content)
-        }
 
         // Check if the generated menu content is correct
         assert!(result.contains(&"[list-repo1] list1".to_string()));

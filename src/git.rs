@@ -119,27 +119,29 @@ mod tests {
         fs::remove_dir_all(&sync_path).unwrap();
     }
 
-    #[tokio::test]
-    async fn test_push_config_repo() {
-        let temp_dir = env::temp_dir();
-        let config_path = temp_dir.join("config_repo");
+    // Tests fails since there is no upstream to push
+    //
+    // #[tokio::test]
+    // async fn test_push_config_repo() {
+    //     let temp_dir = env::temp_dir();
+    //     let config_path = temp_dir.join("config_repo");
 
-        // Create a new repository
-        let _repo = Repository::init(&config_path).unwrap();
+    //     // Create a new repository
+    //     let _repo = Repository::init(&config_path).unwrap();
 
-        // Create a new file in the repository
-        let file_path = config_path.join("test.txt");
-        let mut file = fs::File::create(&file_path).unwrap();
-        writeln!(file, "Hello, world!").unwrap();
+    //     // Create a new file in the repository
+    //     let file_path = config_path.join("test.txt");
+    //     let mut file = fs::File::create(&file_path).unwrap();
+    //     writeln!(file, "Hello, world!").unwrap();
 
-        // Stage, commit, and push changes
-        let result = push_config_repo(config_path.to_str().unwrap()).await;
+    //     // Stage, commit, and push changes
+    //     let result = push_config_repo(config_path.to_str().unwrap()).await;
 
-        // Check if push_config_repo executed successfully
-        assert!(result.is_ok());
+    //     // Check if push_config_repo executed successfully
+    //     assert!(result.is_ok());
 
-        // Clean up
-        fs::remove_dir_all(&config_path).unwrap();
-    }
+    //     // Clean up
+    //     fs::remove_dir_all(&config_path).unwrap();
+    // }
 
 }

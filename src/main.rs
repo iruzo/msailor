@@ -1,13 +1,18 @@
+use std::process::exit;
+
 mod path;
 mod git;
 mod repo;
 mod menu;
+mod config;
 
 #[tokio::main]
 async fn main() {
+
+    exit(0);
+
     let paths = path::get_paths();
     // println!("Plug Path: {}", paths.plug_path);
-
 
     // Define a list of repositories
     let repos = vec![

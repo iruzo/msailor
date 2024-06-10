@@ -26,7 +26,43 @@ pub fn create_sample_repo(repo_path: &str) -> Result<(), Box<dyn std::error::Err
     // Files
     fs::create_dir_all(repo_path.join("config"))?;
     let mut config_file = fs::File::create(repo_path.join("config/config"))?;
-    writeln!(config_file, "config content")?;
+
+    writeln!(config_file, "# Configuration file for the application")?;
+    writeln!(config_file, "# Default paths (override by specifying new values):")?;
+    writeln!(config_file)?;
+    writeln!(config_file, "# Path to the configuration directory")?;
+    writeln!(config_file, "# The default path is determined based on the OS:")?;
+    writeln!(config_file, "# - On Linux: $XDG_CONFIG_HOME or ~/.config/msailor")?;
+    writeln!(config_file, "# - On Windows: %APPDATA%\\msailor")?;
+    writeln!(config_file, "# - On macOS: $HOME/Library/Application Support/msailor")?;
+    writeln!(config_file, "config_path = /path/to/override/config")?;
+    writeln!(config_file)?;
+    writeln!(config_file, "# Path to the data directory")?;
+    writeln!(config_file, "# The default path is determined based on the OS:")?;
+    writeln!(config_file, "# - On Linux: $XDG_DATA_HOME or ~/.local/share/msailor")?;
+    writeln!(config_file, "# - On Windows: %LOCALAPPDATA%\\msailor")?;
+    writeln!(config_file, "# - On macOS: $HOME/Library/Application Support/msailor")?;
+    writeln!(config_file, "data_path = /path/to/override/data")?;
+    writeln!(config_file)?;
+    writeln!(config_file, "# Path to the temporary directory")?;
+    writeln!(config_file, "# The default path is determined based on the OS:")?;
+    writeln!(config_file, "# - On Linux: $XDG_CACHE_HOME or ~/.cache/msailor")?;
+    writeln!(config_file, "# - On Windows: %TEMP%\\msailor")?;
+    writeln!(config_file, "# - On macOS: $HOME/Library/Caches/msailor")?;
+    writeln!(config_file, "tmp_path = /path/to/override/tmp")?;
+    writeln!(config_file)?;
+    writeln!(config_file, "# Path to the history file")?;
+    writeln!(config_file, "history_path = /path/to/override/history")?;
+    writeln!(config_file)?;
+    writeln!(config_file, "# Path to the sync directory")?;
+    writeln!(config_file, "sync_path = /path/to/override/sync")?;
+    writeln!(config_file)?;
+    writeln!(config_file, "# Path to the list directory")?;
+    writeln!(config_file, "list_path = /path/to/override/list")?;
+    writeln!(config_file)?;
+    writeln!(config_file, "# Path to the plugins directory")?;
+    writeln!(config_file, "plug_path = /path/to/override/plug")?;
+    writeln!(config_file)?;
 
     let mut quickmark_file = fs::File::create(repo_path.join("quickmark"))?;
     writeln!(quickmark_file, "quickmark content")?;

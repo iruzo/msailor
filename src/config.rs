@@ -4,7 +4,7 @@ use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
 /// Parses a key-value configuration file and returns the content as a `HashMap`.
-pub fn parse_config_file(config_path: &str) -> io::Result<HashMap<String, String>> {
+pub fn parse_config_file(config_path: &str, default_paths: Option<HashMap<String, String>>) -> io::Result<HashMap<String, String>> {
     let path = Path::new(config_path);
     let file = File::open(path)?;
     let reader = BufReader::new(file);
@@ -20,6 +20,13 @@ pub fn parse_config_file(config_path: &str) -> io::Result<HashMap<String, String
         // Split the line into key and value
         if let Some((key, value)) = line.split_once('=') {
             config_map.insert(key.trim().to_string(), value.trim().to_string());
+        }
+    }
+
+    // If default_paths is provided, insert only missing key-value pairs into config_map
+    if let Some(defaults) = default_paths {
+        for (key, value) in defaults {
+            config_map.entry(key).or_insert(value);
         }
     }
 
@@ -47,7 +54,7 @@ mod tests {
         writeln!(file, "   ").unwrap(); // Empty line
 
         // Parse the config file
-        let result = parse_config_file(config_path.to_str().unwrap());
+        let result = parse_config_file(config_path.to_str().unwrap(), None);
         assert!(result.is_ok());
 
         let config_map = result.unwrap();

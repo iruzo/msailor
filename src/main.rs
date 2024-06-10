@@ -71,7 +71,7 @@ async fn main() {
     let config_path = "/path/to/config.cfg";
 
     // Parse the configuration file
-    match config::parse_config_file(config_path) {
+    match config::parse_config_file(config_path, None) {
         Ok(config_map) => {
             for (key, value) in &config_map {
                 println!("{}: {}", key, value);

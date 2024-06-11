@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::path::{PathBuf, MAIN_SEPARATOR};
@@ -10,6 +11,21 @@ pub struct Paths {
     pub sync_path: String,
     pub list_path: String,
     pub plug_path: String,
+}
+
+impl Paths {
+    // Method to convert the Paths struct to a HashMap
+    pub fn to_hash_map(&self) -> HashMap<String, String> {
+        let mut map = HashMap::new();
+        map.insert("config_path".to_string(), self.config_path.clone());
+        map.insert("data_path".to_string(), self.data_path.clone());
+        map.insert("tmp_path".to_string(), self.tmp_path.clone());
+        map.insert("history_path".to_string(), self.history_path.clone());
+        map.insert("sync_path".to_string(), self.sync_path.clone());
+        map.insert("list_path".to_string(), self.list_path.clone());
+        map.insert("plug_path".to_string(), self.plug_path.clone());
+        map
+    }
 }
 
 fn home_dir() -> PathBuf {
@@ -25,7 +41,7 @@ fn home_dir() -> PathBuf {
     }
 }
 
-pub fn get_paths() -> Paths {
+pub fn get_default_paths() -> Paths {
     let (user_config_path, user_data_path, user_tmp_path) = if cfg!(target_os = "linux") {
         let user_config_path = env::var("XDG_CONFIG_HOME").unwrap_or_else(|_| {
             let mut path = home_dir();
@@ -107,7 +123,7 @@ mod tests {
 
     #[test]
     fn test_get_paths() {
-        let paths = get_paths();
+        let paths = get_default_paths();
 
         println!("Config Path:  {}", paths.config_path);
         println!("Data Path:    {}", paths.data_path);
@@ -130,5 +146,35 @@ mod tests {
         assert!(fs::metadata(&paths.config_path).is_ok(), "Config path does not exist");
         assert!(fs::metadata(&paths.data_path).is_ok(), "Data path does not exist");
         assert!(fs::metadata(&paths.tmp_path).is_ok(), "Tmp path does not exist");
+    }
+
+    #[test]
+    fn test_paths_to_hash_map() {
+        let paths = Paths {
+            config_path: "config.cfg".to_string(),
+            data_path: "/var/data".to_string(),
+            tmp_path: "/tmp".to_string(),
+            history_path: "/var/history".to_string(),
+            sync_path: "/var/sync".to_string(),
+            list_path: "/var/list".to_string(),
+            plug_path: "/var/plug".to_string(),
+        };
+
+        let map = paths.to_hash_map();
+
+        let expected_map: HashMap<String, String> = [
+            ("config_path", "config.cfg"),
+            ("data_path", "/var/data"),
+            ("tmp_path", "/tmp"),
+            ("history_path", "/var/history"),
+            ("sync_path", "/var/sync"),
+            ("list_path", "/var/list"),
+            ("plug_path", "/var/plug"),
+        ].iter().cloned()
+         .map(|(k, v)| (k.to_string(), v.to_string()))
+         .collect();
+
+        // Check if the map has the same entries as the expected_map
+        assert_eq!(map, expected_map);
     }
 }

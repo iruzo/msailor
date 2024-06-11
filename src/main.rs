@@ -11,8 +11,21 @@ async fn main() {
 
     exit(0);
 
-    let paths = path::get_paths();
+    let default_paths = path::get_default_paths();
     // println!("Plug Path: {}", paths.plug_path);
+
+    // Define the path to the configuration file
+    let config_path = "/path/to/config.cfg";
+
+    // Parse the configuration file
+    match config::parse_config_file(config_path, Some(default_paths.to_hash_map())) {
+        Ok(config_map) => {
+            for (key, value) in &config_map {
+                println!("{}: {}", key, value);
+            }
+        },
+        Err(e) => eprintln!("Error parsing config file: {}", e),
+    }
 
     // Define a list of repositories
     let repos = vec![
@@ -22,13 +35,13 @@ async fn main() {
     ];
 
     // // Call sync_repos function
-    let sync_path = paths.sync_path;
+    let sync_path = default_paths.sync_path;
     if let Err(e) = git::sync_repos(repos.clone(), &sync_path).await {
         eprintln!("Error during repo sync: {}", e);
     }
 
     // Define the plug path
-    let plug_path = paths.plug_path;
+    let plug_path = default_paths.plug_path;
 
     // Call sync_plug function
     if let Err(e) = git::sync_repos(repos, &plug_path).await {
@@ -65,19 +78,6 @@ async fn main() {
             }
         },
         Err(e) => eprintln!("Error generating menu content: {}", e),
-    }
-
-    // Define the path to the configuration file
-    let config_path = "/path/to/config.cfg";
-
-    // Parse the configuration file
-    match config::parse_config_file(config_path, None) {
-        Ok(config_map) => {
-            for (key, value) in &config_map {
-                println!("{}: {}", key, value);
-            }
-        },
-        Err(e) => eprintln!("Error parsing config file: {}", e),
     }
 
 }

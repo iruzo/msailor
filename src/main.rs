@@ -5,6 +5,7 @@ mod git;
 mod repo;
 mod menu;
 mod config;
+mod dwnl;
 
 #[tokio::main]
 async fn main() {
@@ -78,6 +79,15 @@ async fn main() {
             }
         },
         Err(e) => eprintln!("Error generating menu content: {}", e),
+    }
+
+    // ------------------------ file download --------------------
+
+    let url = "https://example.com/file";
+    let output_path = "downloaded_file";
+    match dwnl::file(url, output_path) {
+        Ok(_) => println!("File downloaded successfully."),
+        Err(e) => eprintln!("Error downloading file: {}", e),
     }
 
 }

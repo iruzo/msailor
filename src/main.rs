@@ -83,11 +83,13 @@ async fn main() {
 
     // ------------------------ file download --------------------
 
-    let url = "https://example.com/file";
-    let output_path = "downloaded_file";
-    match dwnl::file(url, output_path) {
-        Ok(_) => println!("File downloaded successfully."),
-        Err(e) => eprintln!("Error downloading file: {}", e),
-    }
+    let urls = vec![
+        ("https://raw.githubusercontent.com/iruzo/msailor/main/Cargo.toml".to_string(), "output_file_1.txt".to_string()),
+        ("https://raw.githubusercontent.com/iruzo/msailor/main/README.md".to_string(), "output_file_2.txt".to_string()),
+    ];
+
+    let _download_files = dwnl::download_files(urls);
+
+    println!("Files downloaded successfully.");
 
 }

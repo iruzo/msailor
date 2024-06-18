@@ -1,25 +1,20 @@
 use std::process::exit;
 
-mod path;
-mod git;
-mod repo;
-mod menu;
-mod config;
-mod dwnl;
+mod modules;
 
 #[tokio::main]
 async fn main() {
 
     exit(0);
 
-    let default_paths = path::get_default_paths();
+    let default_paths = modules::path::get_default_paths();
     // println!("Plug Path: {}", paths.plug_path);
 
     // Define the path to the configuration file
     let config_path = "/path/to/config.cfg";
 
     // Parse the configuration file
-    match config::parse_config_file(config_path, Some(default_paths.to_hash_map())) {
+    match modules::config::parse_config_file(config_path, Some(default_paths.to_hash_map())) {
         Ok(config_map) => {
             for (key, value) in &config_map {
                 println!("{}: {}", key, value);
@@ -37,7 +32,7 @@ async fn main() {
 
     // // Call sync_repos function
     let sync_path = default_paths.sync_path;
-    if let Err(e) = git::sync_repos(repos.clone(), &sync_path).await {
+    if let Err(e) = modules::git::sync_repos(repos.clone(), &sync_path).await {
         eprintln!("Error during repo sync: {}", e);
     }
 
@@ -45,7 +40,7 @@ async fn main() {
     let plug_path = default_paths.plug_path;
 
     // Call sync_plug function
-    if let Err(e) = git::sync_repos(repos, &plug_path).await {
+    if let Err(e) = modules::git::sync_repos(repos, &plug_path).await {
         eprintln!("Error during plug sync: {}", e);
     }
 
@@ -53,7 +48,7 @@ async fn main() {
     let config_path = "/path/to/config";
     //
     // // Call push_config_repo function
-    if let Err(e) = git::push_config_repo(config_path).await {
+    if let Err(e) = modules::git::push_config_repo(config_path).await {
         eprintln!("Error during config repo push: {}", e);
     }
 
@@ -61,7 +56,7 @@ async fn main() {
     let repo_path = "/path/to/sample_repo";
 
     // Create a sample repo
-    if let Err(e) = repo::create_sample_repo(repo_path) {
+    if let Err(e) = modules::repo::create_sample_repo(repo_path) {
         eprintln!("Error creating sample repo: {}", e);
     }
 
@@ -72,7 +67,7 @@ async fn main() {
     let plug_path = "/path/to/plug";
 
     // Generate menu content
-    match menu::generate_menu_content(sync_path, list_path, config_path, plug_path) {
+    match modules::menu::generate_menu_content(sync_path, list_path, config_path, plug_path) {
         Ok(menu_content) => {
             for item in menu_content {
                 println!("{}", item);
@@ -88,8 +83,10 @@ async fn main() {
         ("https://raw.githubusercontent.com/iruzo/msailor/main/README.md".to_string(), "output_file_2.txt".to_string()),
     ];
 
-    let _download_files = dwnl::download_files(urls);
+    let _download_files = modules::dwnl::download_files(urls);
 
     println!("Files downloaded successfully.");
+
+    // ------------------------ play audio --------------------
 
 }

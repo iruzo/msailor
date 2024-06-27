@@ -1,26 +1,58 @@
 use crossterm::event;
+use crossterm::{
+    event::{Event, KeyCode},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
 use ratatui::{
     backend::Backend,
     backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders},
     Terminal,
 };
-use crossterm::{
-    execute,
-    terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    event::{Event, KeyCode},
-};
 use std::io;
 
-pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mock_event_receiver: Option<std::sync::mpsc::Receiver<Event>>) -> Result<(), io::Error> {
+pub fn run_app<B: Backend>( terminal: &mut Terminal<B>, mock_event_receiver: Option<std::sync::mpsc::Receiver<Event>>,) -> Result<(), io::Error> {
     // Application loop
     loop {
         terminal.draw(|f| {
             let size = f.size();
-            let block = Block::default()
-                .title("Simple TUI")
-                .borders(Borders::ALL);
-            f.render_widget(block, size);
+
+            // Layout constraints
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints(
+                    [
+                        Constraint::Percentage(80), // Main area takes 80% of the width
+                        Constraint::Percentage(20), // Right panel takes 20% of the width
+                    ]
+                        .as_ref(),
+                )
+                .split(size);
+
+            let vertical_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints(
+                    [
+                        Constraint::Percentage(95), // Main box takes 95% of the height
+                        Constraint::Percentage(5), // Bottom bar takes 5% of the height
+                    ]
+                        .as_ref(),
+                )
+                .split(chunks[0]);
+
+            // Main box
+            let main_box = Block::default().title("Main Box").borders(Borders::ALL);
+            f.render_widget(main_box, vertical_chunks[0]);
+
+            // Bottom bar
+            let bottom_bar = Block::default().borders(Borders::ALL);
+            f.render_widget(bottom_bar, vertical_chunks[1]);
+
+            // Right panel
+            let right_panel = Block::default().title("Right Panel").borders(Borders::ALL);
+            f.render_widget(right_panel, chunks[1]);
         })?;
 
         // Handle input
@@ -46,7 +78,6 @@ pub fn run_app<B: Backend>(terminal: &mut Terminal<B>, mock_event_receiver: Opti
                 break;
             }
         }
-
     }
 
     Ok(())
@@ -65,10 +96,7 @@ pub fn tui() -> Result<(), io::Error> {
 
     // Restore terminal
     disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-    )?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen,)?;
     terminal.show_cursor()?;
 
     res
@@ -77,9 +105,9 @@ pub fn tui() -> Result<(), io::Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyEventState, KeyModifiers};
     use ratatui::backend::TestBackend;
     use ratatui::Terminal;
-    use crossterm::event::{KeyEvent, KeyCode, KeyModifiers, KeyEventKind, KeyEventState, Event};
     use std::sync::mpsc;
     use std::thread;
 
@@ -93,14 +121,12 @@ mod tests {
         let (event_sender, event_receiver) = mpsc::channel();
 
         // Simulate pressing 'q'
-        let events = vec![
-            Event::Key(KeyEvent {
-                code: KeyCode::Char('q'),
-                modifiers: KeyModifiers::NONE,
-                kind: KeyEventKind::Press,
-                state: KeyEventState::NONE,
-            })
-        ];
+        let events = vec![Event::Key(KeyEvent {
+        code: KeyCode::Char('q'),
+        modifiers: KeyModifiers::NONE,
+        kind: KeyEventKind::Press,
+        state: KeyEventState::NONE,
+        })];
 
         thread::spawn(move || {
             for event in events {
@@ -111,10 +137,7 @@ mod tests {
         // Run the app
         let result = run_app(&mut terminal, Some(event_receiver));
 
-        println!("yes");
-
         // Assert the app exited without error
         assert!(result.is_ok());
     }
 }
-

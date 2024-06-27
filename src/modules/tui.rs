@@ -1,5 +1,5 @@
 use crossterm::event;
-use tui::{
+use ratatui::{
     backend::Backend,
     backend::CrosstermBackend,
     widgets::{Block, Borders},
@@ -77,8 +77,8 @@ pub fn tui() -> Result<(), io::Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tui::backend::TestBackend;
-    use tui::Terminal;
+    use ratatui::backend::TestBackend;
+    use ratatui::Terminal;
     use crossterm::event::{KeyEvent, KeyCode, KeyModifiers, KeyEventKind, KeyEventState, Event};
     use std::sync::mpsc;
     use std::thread;

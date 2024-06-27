@@ -5,13 +5,15 @@ mod modules;
 #[tokio::main]
 async fn main() {
 
-    exit(0);
-
     let default_paths = modules::path::get_default_paths();
     // println!("Plug Path: {}", paths.plug_path);
 
     // Define the path to the configuration file
     let config_path = "/path/to/config.cfg";
+
+    let _ = modules::tui::tui();
+
+    exit(0);
 
     // Parse the configuration file
     match modules::config::parse_config_file(config_path, Some(default_paths.to_hash_map())) {
@@ -86,7 +88,5 @@ async fn main() {
     let _download_files = modules::dwnl::download_files(urls);
 
     println!("Files downloaded successfully.");
-
-    // ------------------------ play audio --------------------
 
 }

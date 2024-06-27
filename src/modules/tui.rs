@@ -8,13 +8,18 @@ use ratatui::{
     backend::Backend,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
-    widgets::{Block, Borders},
+    text::Text,
+    widgets::{Block, Borders, Paragraph},
     Terminal,
 };
 use std::io;
 
-pub fn run_app<B: Backend>( terminal: &mut Terminal<B>, mock_event_receiver: Option<std::sync::mpsc::Receiver<Event>>,) -> Result<(), io::Error> {
-    // Application loop
+pub fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    mock_event_receiver: Option<std::sync::mpsc::Receiver<Event>>,
+) -> Result<(), io::Error> {
+    let mut input_buffer = String::new();
+
     loop {
         terminal.draw(|f| {
             let size = f.size();
@@ -36,7 +41,7 @@ pub fn run_app<B: Backend>( terminal: &mut Terminal<B>, mock_event_receiver: Opt
                 .constraints(
                     [
                         Constraint::Percentage(95), // Main box takes 95% of the height
-                        Constraint::Percentage(5), // Bottom bar takes 5% of the height
+                        Constraint::Percentage(5),  // Bottom bar takes 5% of the height
                     ]
                         .as_ref(),
                 )
@@ -47,8 +52,9 @@ pub fn run_app<B: Backend>( terminal: &mut Terminal<B>, mock_event_receiver: Opt
             f.render_widget(main_box, vertical_chunks[0]);
 
             // Bottom bar
-            let bottom_bar = Block::default().borders(Borders::ALL);
-            f.render_widget(bottom_bar, vertical_chunks[1]);
+            let bottom_paragraph =
+            Paragraph::new(Text::from(input_buffer.as_str())).block(Block::bordered());
+            f.render_widget(bottom_paragraph, vertical_chunks[1]);
 
             // Right panel
             let right_panel = Block::default().title("Right Panel").borders(Borders::ALL);
@@ -56,26 +62,38 @@ pub fn run_app<B: Backend>( terminal: &mut Terminal<B>, mock_event_receiver: Opt
         })?;
 
         // Handle input
-        if mock_event_receiver.is_some() {
-            if let Ok(event) = mock_event_receiver.as_ref().unwrap().recv() {
-                match event {
-                    Event::Key(key) => {
-                        if key.code == KeyCode::Char('q') {
-                            break;
-                        }
-                    }
-                    Event::FocusGained => todo!(),
-                    Event::FocusLost => todo!(),
-                    Event::Mouse(_) => todo!(),
-                    Event::Paste(_) => todo!(),
-                    Event::Resize(_, _) => todo!(),
-                }
-            }
-        }
+        let event = if let Some(receiver) = &mock_event_receiver {
+            receiver.recv().ok()
+        } else {
+            event::read().ok()
+        };
 
-        if let Event::Key(key) = event::read()? {
-            if key.code == KeyCode::Char('q') {
-                break;
+        if let Some(Event::Key(key)) = event {
+            match key.code {
+                KeyCode::Char(c) => {
+                    input_buffer.push(c);
+                }
+                KeyCode::Enter => {
+                    if input_buffer == ":q" {
+                        break;
+                    }
+                    // Event::FocusGained => todo!(),
+                    // Event::FocusLost => todo!(),
+                    // Event::Mouse(_) => todo!(),
+                    // Event::Paste(_) => todo!(),
+                    // Event::Resize(_, _) => todo!(),
+                    input_buffer.clear();
+                }
+                //     }
+                // }
+                //
+                // if let Event::Key(key) = event::read()? {
+                //     if key.code == KeyCode::Char('q') {
+                //         break;
+                KeyCode::Backspace => {
+                    input_buffer.pop();
+                }
+                _ => {}
             }
         }
     }
@@ -120,13 +138,27 @@ mod tests {
         // Create an event channel
         let (event_sender, event_receiver) = mpsc::channel();
 
-        // Simulate pressing 'q'
-        let events = vec![Event::Key(KeyEvent {
-        code: KeyCode::Char('q'),
-        modifiers: KeyModifiers::NONE,
-        kind: KeyEventKind::Press,
-        state: KeyEventState::NONE,
-        })];
+        // Simulate pressing ':q'
+        let events = vec![
+            Event::Key(KeyEvent {
+            code: KeyCode::Char(':'),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: KeyEventState::NONE,
+            }),
+            Event::Key(KeyEvent {
+            code: KeyCode::Char('q'),
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: KeyEventState::NONE,
+            }),
+            Event::Key(KeyEvent {
+            code: KeyCode::Enter,
+            modifiers: KeyModifiers::NONE,
+            kind: KeyEventKind::Press,
+            state: KeyEventState::NONE,
+            }),
+        ];
 
         thread::spawn(move || {
             for event in events {

@@ -8,17 +8,34 @@ use ratatui::{
     backend::Backend,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
-    text::Text,
-    widgets::{Block, Borders, Paragraph},
+    text::{Span, Text},
+    widgets::{Block, Borders, List, ListItem, Paragraph},
     Terminal,
 };
 use std::io;
+
+// TODO: Call the menu module instead of mock the menu with this function
+pub fn menu() -> Vec<String> {
+    vec![
+        String::from("Apple Cherry Date"),
+        String::from("Apple Banana Cherry"),
+        String::from("Apple"),
+        String::from("Banana"),
+        String::from("Cherry"),
+        String::from("Date"),
+        String::from("Elderberry"),
+        String::from("Fig"),
+        String::from("Grape"),
+    ]
+}
 
 pub fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     mock_event_receiver: Option<std::sync::mpsc::Receiver<Event>>,
 ) -> Result<(), io::Error> {
     let mut input_buffer = String::new();
+    let items = menu();
+    let mut filtered_items = items.clone();
 
     loop {
         terminal.draw(|f| {
@@ -49,11 +66,16 @@ pub fn run_app<B: Backend>(
 
             // Main box
             let main_box = Block::default().title("Main Box").borders(Borders::ALL);
-            f.render_widget(main_box, vertical_chunks[0]);
+            let list_items: Vec<ListItem> = filtered_items
+                .iter()
+                .map(|i| ListItem::new(Span::raw(i)))
+                .collect();
+            let list = List::new(list_items).block(main_box);
+            f.render_widget(list, vertical_chunks[0]);
 
             // Bottom bar
-            let bottom_paragraph =
-            Paragraph::new(Text::from(input_buffer.as_str())).block(Block::bordered());
+            let bottom_paragraph = Paragraph::new(Text::from(input_buffer.as_str()))
+                .block(Block::default().borders(Borders::ALL));
             f.render_widget(bottom_paragraph, vertical_chunks[1]);
 
             // Right panel
@@ -95,6 +117,24 @@ pub fn run_app<B: Backend>(
                 }
                 _ => {}
             }
+
+            // Update filtered items based on the input buffer
+            let filters: Vec<String> = input_buffer
+                .split_whitespace()
+                .map(|s| s.to_lowercase())
+                .collect();
+            let mut current: Vec<String> =
+            items.iter().map(|item| item.replace("'\n'", "")).collect();
+
+            for filter in filters {
+                current.retain(|item| item.to_lowercase().contains(&filter));
+            }
+
+            if input_buffer.trim().is_empty() {
+                current.push(String::new());
+            }
+
+            filtered_items = current;
         }
     }
 

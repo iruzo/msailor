@@ -24,8 +24,7 @@ pub fn create_sample_repo(repo_path: &str) -> Result<(), Box<dyn std::error::Err
     fs::create_dir_all(repo_path.join("list"))?;
 
     // Files
-    fs::create_dir_all(repo_path.join("config"))?;
-    let mut config_file = fs::File::create(repo_path.join("config/config"))?;
+    let mut config_file = fs::File::create(repo_path.join("config"))?;
 
     writeln!(config_file, "# Configuration file for the application")?;
     writeln!(config_file, "# Default paths (override by specifying new values):")?;
@@ -107,7 +106,7 @@ mod tests {
         // Verify the structure and content of the created sample repo
         assert!(repo_path.exists());
         assert!(repo_path.join(".gitignore").exists());
-        assert!(repo_path.join("config/config").exists());
+        assert!(repo_path.join("config").exists());
         assert!(repo_path.join("quickmark").exists());
         assert!(repo_path.join("source").exists());
         assert!(repo_path.join("list/list1").exists());

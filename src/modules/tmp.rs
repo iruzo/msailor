@@ -55,6 +55,9 @@ pub async fn tmp() {
         eprintln!("Error creating sample repo: {}", e);
     }
 
+    // Create a sample repo
+    // let _ = modules::utils::repo::create_sample_repo(modules::utils::path::get_default_paths().config_path.as_str());
+
     // Define the necessary paths
     let sync_path = "/path/to/sync";
     let list_path = "/path/to/list";

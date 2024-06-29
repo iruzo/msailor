@@ -82,6 +82,7 @@ pub fn generate_menu_content(
         menu_content.push("[command] update".to_string());
     }
     menu_content.extend_from_slice(&[
+        "[command] create-sample-repo".to_string(),
         "[command] sync-repos".to_string(),
         "[command] sync-plugs".to_string(),
         "[command] push".to_string(),

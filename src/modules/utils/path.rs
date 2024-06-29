@@ -5,6 +5,7 @@ use std::path::{PathBuf, MAIN_SEPARATOR};
 
 pub struct Paths {
     pub config_path: String,
+    pub config_file_path: String,
     pub data_path: String,
     pub tmp_path: String,
     pub history_path: String,
@@ -18,6 +19,7 @@ impl Paths {
     pub fn to_hash_map(&self) -> HashMap<String, String> {
         let mut map = HashMap::new();
         map.insert("config_path".to_string(), self.config_path.clone());
+        map.insert("config_file_path".to_string(), self.config_file_path.clone());
         map.insert("data_path".to_string(), self.data_path.clone());
         map.insert("tmp_path".to_string(), self.tmp_path.clone());
         map.insert("history_path".to_string(), self.history_path.clone());
@@ -88,6 +90,7 @@ pub fn get_default_paths() -> Paths {
     };
 
     let config_path = format!("{}{}msailor", user_config_path, MAIN_SEPARATOR);
+    let config_file_path = format!("{}{}config", config_path, MAIN_SEPARATOR);
     let data_path = format!("{}{}msailor", user_data_path, MAIN_SEPARATOR);
     let tmp_path = format!("{}{}msailor", user_tmp_path, MAIN_SEPARATOR);
     let history_path = format!("{}{}history", data_path, MAIN_SEPARATOR);
@@ -108,6 +111,7 @@ pub fn get_default_paths() -> Paths {
 
     Paths {
         config_path,
+        config_file_path,
         data_path,
         tmp_path,
         history_path,
@@ -152,6 +156,7 @@ mod tests {
     fn test_paths_to_hash_map() {
         let paths = Paths {
             config_path: "config.cfg".to_string(),
+            config_file_path: "config_file.cfg".to_string(),
             data_path: "/var/data".to_string(),
             tmp_path: "/tmp".to_string(),
             history_path: "/var/history".to_string(),
@@ -164,6 +169,7 @@ mod tests {
 
         let expected_map: HashMap<String, String> = [
             ("config_path", "config.cfg"),
+            ("config_file_path", "config_file.cfg"),
             ("data_path", "/var/data"),
             ("tmp_path", "/tmp"),
             ("history_path", "/var/history"),

@@ -4,8 +4,13 @@ use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
 /// Parses a key-value configuration file and returns the content as a `HashMap`.
-pub fn parse_config_file(config_path: &str, default_paths: Option<HashMap<String, String>>) -> io::Result<HashMap<String, String>> {
-    let path = Path::new(config_path);
+pub fn parse_config_file(config_file_path: &str, default_paths: Option<HashMap<String, String>>) -> io::Result<HashMap<String, String>> {
+    let path = Path::new(config_file_path);
+
+    if !path.exists() {
+        return Ok(HashMap::new());
+    }
+
     let file = File::open(path)?;
     let reader = BufReader::new(file);
 

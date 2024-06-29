@@ -1,3 +1,6 @@
+use super::utils::config;
+use super::utils::menu;
+use super::utils::path;
 use crossterm::event;
 use crossterm::{
     event::{Event, KeyCode},
@@ -12,29 +15,45 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph},
     Terminal,
 };
+use std::collections::HashMap;
 use std::io;
-
-// TODO: Call the menu module instead of mock the menu with this function
-pub fn menu() -> Vec<String> {
-    vec![
-        String::from("Apple Cherry Date"),
-        String::from("Apple Banana Cherry"),
-        String::from("Apple"),
-        String::from("Banana"),
-        String::from("Cherry"),
-        String::from("Date"),
-        String::from("Elderberry"),
-        String::from("Fig"),
-        String::from("Grape"),
-    ]
-}
+use std::process::exit;
 
 pub fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     mock_event_receiver: Option<std::sync::mpsc::Receiver<Event>>,
 ) -> Result<(), io::Error> {
     let mut input_buffer = String::new();
-    let items = menu();
+    let paths = path::get_default_paths();
+    let config: HashMap<String, String> = match config::parse_config_file(
+        paths.config_file_path.as_str(),
+        Some(path::get_default_paths().to_hash_map()),
+    ) {
+            Ok(config_map) => config_map,
+            Err(e) => {
+                eprintln!("Error parsing config file on tui.rs: {}", e);
+                exit(0);
+            }
+        };
+    let config_copy = config.clone();
+    let mut items: Vec<String> = Vec::new();
+    if config_copy.is_empty() {
+        let menu_content = menu::generate_menu_content(
+            paths.sync_path.as_str(),
+            paths.list_path.as_str(),
+            paths.config_path.as_str(),
+            paths.plug_path.as_str(),
+        );
+        items.clone_from(&(menu_content?));
+    } else {
+        let menu_content = menu::generate_menu_content(
+            config_copy["sync_path"].as_str(),
+            config_copy["list_path"].as_str(),
+            config_copy["config_path"].as_str(),
+            config_copy["plug_path"].as_str(),
+        );
+        items.clone_from(&(menu_content?));
+    }
     let mut filtered_items = items.clone();
 
     loop {
@@ -65,7 +84,7 @@ pub fn run_app<B: Backend>(
                 .split(chunks[0]);
 
             // Main box
-            let main_box = Block::default().title("Main Box").borders(Borders::ALL);
+            let main_box = Block::default().title("Menu").borders(Borders::ALL);
             let list_items: Vec<ListItem> = filtered_items
                 .iter()
                 .map(|i| ListItem::new(Span::raw(i)))
@@ -79,7 +98,7 @@ pub fn run_app<B: Backend>(
             f.render_widget(bottom_paragraph, vertical_chunks[1]);
 
             // Right panel
-            let right_panel = Block::default().title("Right Panel").borders(Borders::ALL);
+            let right_panel = Block::default().title("List").borders(Borders::ALL);
             f.render_widget(right_panel, chunks[1]);
         })?;
 

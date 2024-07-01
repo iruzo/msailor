@@ -7,14 +7,21 @@ use std::path::Path;
 pub fn parse_config_file(config_file_path: &str, default_paths: Option<HashMap<String, String>>) -> io::Result<HashMap<String, String>> {
     let path = Path::new(config_file_path);
 
+    let mut config_map = HashMap::new();
+
     if !path.exists() {
-        return Ok(HashMap::new());
+        // If default_paths is provided, insert only missing key-value pairs into config_map
+        if let Some(defaults) = default_paths {
+            for (key, value) in defaults {
+                config_map.entry(key).or_insert(value);
+            }
+        }
+
+        return Ok(config_map);
     }
 
     let file = File::open(path)?;
     let reader = BufReader::new(file);
-
-    let mut config_map = HashMap::new();
 
     for line in reader.lines() {
         let line = line?;

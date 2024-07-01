@@ -36,24 +36,12 @@ pub fn run_app<B: Backend>(
             }
         };
     let config_copy = config.clone();
-    let mut items: Vec<String> = Vec::new();
-    if config_copy.is_empty() {
-        let menu_content = menu::generate_menu_content(
-            paths.sync_path.as_str(),
-            paths.list_path.as_str(),
-            paths.config_path.as_str(),
-            paths.plug_path.as_str(),
-        );
-        items.clone_from(&(menu_content?));
-    } else {
-        let menu_content = menu::generate_menu_content(
-            config_copy["sync_path"].as_str(),
-            config_copy["list_path"].as_str(),
-            config_copy["config_path"].as_str(),
-            config_copy["plug_path"].as_str(),
-        );
-        items.clone_from(&(menu_content?));
-    }
+    let items: Vec<String> = menu::generate_menu_content(
+        config_copy["sync_path"].as_str(),
+        config_copy["list_path"].as_str(),
+        config_copy["config_path"].as_str(),
+        config_copy["plug_path"].as_str(),
+    )?;
     let mut filtered_items = items.clone();
 
     loop {

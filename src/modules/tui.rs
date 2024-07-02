@@ -3,6 +3,7 @@ use super::utils::menu;
 use super::utils::path;
 use crossterm::event;
 use crossterm::{
+    // event::{Event, KeyCode, KeyModifiers},
     event::{Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -43,6 +44,7 @@ pub fn run_app<B: Backend>(
         config_copy["plug_path"].as_str(),
     )?;
     let mut filtered_items = items.clone();
+    let mut selected = filtered_items.len() - 1;
 
     loop {
         terminal.draw(|f| {
@@ -75,7 +77,18 @@ pub fn run_app<B: Backend>(
             let main_box = Block::default().title("Menu").borders(Borders::ALL);
             let list_items: Vec<ListItem> = filtered_items
                 .iter()
-                .map(|i| ListItem::new(Span::raw(i)))
+                .enumerate()
+                .map(|(i, item)| {
+                    if !selected < filtered_items.len() {
+                        selected *= 0;
+                    }
+                    let content = if i == selected {
+                        format!(" >> {}", item)
+                    } else {
+                        item.clone()
+                    };
+                    ListItem::new(Span::raw(content))
+                })
                 .collect();
             let list = List::new(list_items).block(main_box);
             f.render_widget(list, vertical_chunks[0]);
@@ -121,6 +134,17 @@ pub fn run_app<B: Backend>(
                 //         break;
                 KeyCode::Backspace => {
                     input_buffer.pop();
+                }
+                KeyCode::Tab => {
+                    if selected == 0 {
+                        selected = filtered_items.len();
+                    }
+                    selected -= 1;
+                    if selected > filtered_items.len() -1 {
+                        selected = filtered_items.len() - 1;
+                    }
+                    // if key.modifiers.contains(KeyModifiers::SHIFT) {
+                    // }
                 }
                 _ => {}
             }

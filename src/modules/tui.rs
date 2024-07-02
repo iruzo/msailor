@@ -115,16 +115,24 @@ pub fn run_app<B: Backend>(
                 KeyCode::Char(c) => {
                     input_buffer.push(c);
                 }
+                KeyCode::Esc => {
+                    input_buffer.clear();
+                }
                 KeyCode::Enter => {
                     if input_buffer == ":q" {
                         break;
+                    }
+                    if input_buffer.trim() != filtered_items[selected] {
+                        input_buffer.clone_from(&filtered_items[selected]);
+                    }
+                    if input_buffer.trim() == filtered_items[selected] {
+                        // execute
                     }
                     // Event::FocusGained => todo!(),
                     // Event::FocusLost => todo!(),
                     // Event::Mouse(_) => todo!(),
                     // Event::Paste(_) => todo!(),
                     // Event::Resize(_, _) => todo!(),
-                    input_buffer.clear();
                 }
                 //     }
                 // }

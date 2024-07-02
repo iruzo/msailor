@@ -65,7 +65,6 @@ pub fn generate_menu_content(
     }
 
     // Plugins
-    menu_content.push("".to_string());
     if Path::new(plug_path).exists() {
         for entry in fs::read_dir(plug_path)? {
             let file = entry?.file_name().into_string().unwrap();
@@ -74,7 +73,6 @@ pub fn generate_menu_content(
     }
 
     // Add options to menu
-    menu_content.push("".to_string());
     menu_content.extend_from_slice(&[
         "[command] help".to_string(),
     ]);
@@ -95,6 +93,9 @@ pub fn generate_menu_content(
         "[command] list-del".to_string(),
         "[command] indexwp".to_string(),
     ]);
+
+    // remove empty lines
+    menu_content.retain(|s| !s.is_empty());
 
     Ok(menu_content)
 }

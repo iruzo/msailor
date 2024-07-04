@@ -119,14 +119,14 @@ pub fn run_app<B: Backend>(
                     input_buffer.clear();
                 }
                 KeyCode::Enter => {
-                    if input_buffer == ":q" {
+                    if input_buffer == "[command] exit" {
                         break;
+                    }
+                    if filtered_items.contains(&input_buffer) && input_buffer.trim() == filtered_items[selected] {
+                        // execute
                     }
                     if input_buffer.trim() != filtered_items[selected] {
                         input_buffer.clone_from(&filtered_items[selected]);
-                    }
-                    if input_buffer.trim() == filtered_items[selected] {
-                        // execute
                     }
                     // Event::FocusGained => todo!(),
                     // Event::FocusLost => todo!(),
@@ -169,11 +169,16 @@ pub fn run_app<B: Backend>(
                 current.retain(|item| item.to_lowercase().contains(&filter));
             }
 
-            if input_buffer.trim().is_empty() {
-                current.push(String::new());
+            // if input_buffer.trim().is_empty() {
+            //     current.push(String::new());
+            // }
+
+            if filtered_items.len() != current.len() && !filtered_items.is_empty() {
+                selected = current.len() - 1;
             }
 
             filtered_items = current;
+
         }
     }
 
@@ -209,7 +214,7 @@ mod tests {
     use std::thread;
 
     #[test]
-    fn test_run_app_exits_on_q() {
+    fn test_run_app_exits() {
         // Create a TestBackend and Terminal
         let backend = TestBackend::new(80, 24);
         let mut terminal = Terminal::new(backend).unwrap();
@@ -219,24 +224,13 @@ mod tests {
 
         // Simulate pressing ':q'
         let events = vec![
-            Event::Key(KeyEvent {
-            code: KeyCode::Char(':'),
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: KeyEventState::NONE,
-            }),
-            Event::Key(KeyEvent {
-            code: KeyCode::Char('q'),
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: KeyEventState::NONE,
-            }),
-            Event::Key(KeyEvent {
-            code: KeyCode::Enter,
-            modifiers: KeyModifiers::NONE,
-            kind: KeyEventKind::Press,
-            state: KeyEventState::NONE,
-            }),
+            Event::Key(KeyEvent { code: KeyCode::Char('e'), modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
+            Event::Key(KeyEvent { code: KeyCode::Char('x'), modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
+            Event::Key(KeyEvent { code: KeyCode::Char('i'), modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
+            Event::Key(KeyEvent { code: KeyCode::Char('t'), modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
+            Event::Key(KeyEvent { code: KeyCode::Tab, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
+            Event::Key(KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
+            Event::Key(KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
         ];
 
         thread::spawn(move || {

@@ -74,6 +74,7 @@ pub fn generate_menu_content(
 
     // Add options to menu
     menu_content.extend_from_slice(&[
+        "[command] exit".to_string(),
         "[command] help".to_string(),
     ]);
     if cfg!(target_os = "windows") {
@@ -166,6 +167,7 @@ mod tests {
         assert!(result.contains(&"[file] file1".to_string()));
         assert!(result.contains(&"[plug] :plugin1".to_string()));
         assert!(result.contains(&"[command] help".to_string()));
+        assert!(result.contains(&"[command] exit".to_string()));
 
         // Clean up
         fs::remove_dir_all(&sync_path).unwrap();

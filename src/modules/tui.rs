@@ -12,19 +12,27 @@ use ratatui::{
     backend::Backend,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
+    style::{Color, Modifier, Style},
     text::{Span, Text},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Terminal,
 };
 use std::collections::HashMap;
 use std::io;
 use std::process::exit;
 
+#[derive(PartialEq)]
+enum Mode {
+    Normal,
+    Filter,
+}
+
 pub fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     mock_event_receiver: Option<std::sync::mpsc::Receiver<Event>>,
 ) -> Result<(), io::Error> {
     let mut input_buffer = String::new();
+    let mut mode = Mode::Normal;
     let paths = path::get_default_paths();
     let config: HashMap<String, String> = match config::parse_config_file(
         paths.config_file_path.as_str(),
@@ -45,6 +53,9 @@ pub fn run_app<B: Backend>(
     )?;
     let mut filtered_items = items.clone();
     let mut selected = filtered_items.len() - 1;
+    let mut title = "NORMAL";
+    let mut list_state = ListState::default();
+    list_state.select(Some(selected));
 
     loop {
         terminal.draw(|f| {
@@ -74,32 +85,36 @@ pub fn run_app<B: Backend>(
                 .split(chunks[0]);
 
             // Main box
-            let main_box = Block::default().title("Menu").borders(Borders::ALL);
+            let main_box = Block::default()
+                // .title("Menu")
+                .borders(Borders::ALL);
             let list_items: Vec<ListItem> = filtered_items
                 .iter()
-                .enumerate()
-                .map(|(i, item)| {
-                    if !selected < filtered_items.len() {
-                        selected *= 0;
-                    }
-                    let content = if i == selected {
-                        format!(" >> {}", item)
-                    } else {
-                        item.clone()
-                    };
-                    ListItem::new(Span::raw(content))
-                })
+                .map(|item| ListItem::new(Span::raw(item.clone())))
                 .collect();
-            let list = List::new(list_items).block(main_box);
-            f.render_widget(list, vertical_chunks[0]);
+            let list = List::new(list_items).block(main_box).highlight_style(
+                Style::default()
+                    // .bg(Color::Blue)
+                    .fg(Color::LightYellow)
+                    .add_modifier(Modifier::BOLD),
+            );
+            f.render_stateful_widget(list, vertical_chunks[0], &mut list_state);
 
             // Bottom bar
+            if mode == Mode::Normal {
+                title = "NORMAL";
+            }
+            if mode == Mode::Filter {
+                title = "FILTER";
+            }
             let bottom_paragraph = Paragraph::new(Text::from(input_buffer.as_str()))
                 .block(Block::default().borders(Borders::ALL));
             f.render_widget(bottom_paragraph, vertical_chunks[1]);
 
             // Right panel
-            let right_panel = Block::default().title("List").borders(Borders::ALL);
+            let right_panel = Block::default()
+                // .title("list")
+                .borders(Borders::ALL);
             f.render_widget(right_panel, chunks[1]);
         })?;
 
@@ -111,74 +126,84 @@ pub fn run_app<B: Backend>(
         };
 
         if let Some(Event::Key(key)) = event {
-            match key.code {
-                KeyCode::Char(c) => {
-                    input_buffer.push(c);
-                }
-                KeyCode::Esc => {
-                    input_buffer.clear();
-                }
-                KeyCode::Enter => {
-                    if input_buffer == "[command] exit" {
+            match mode {
+                Mode::Normal => match key.code {
+                    KeyCode::Enter => {
+                        if filtered_items.contains(&input_buffer)
+                        && input_buffer.trim() == filtered_items[selected]
+                        {
+                            //execute
+                            filtered_items.clone_from(&items);
+                            input_buffer.clear();
+                        }
+                    }
+                    KeyCode::Char('j') => {
+                        if selected < filtered_items.len() - 1 {
+                            selected += 1;
+                        }
+                        list_state.select(Some(selected));
+                    }
+                    KeyCode::Char('k') => {
+                        selected = selected.saturating_sub(1);
+                        list_state.select(Some(selected));
+                    }
+                    KeyCode::Char('g') => {
+                        selected = 0;
+                        list_state.select(Some(selected));
+                    }
+                    KeyCode::Char('G') => {
+                        selected = filtered_items.len() - 1;
+                        list_state.select(Some(selected));
+                    }
+                    KeyCode::Char('/') => {
+                        mode = Mode::Filter;
+                        input_buffer.clear()
+                    }
+                    KeyCode::Char('q') => {
                         break;
                     }
-                    if filtered_items.contains(&input_buffer) && input_buffer.trim() == filtered_items[selected] {
-                        // execute
+                    _ => {}
+                },
+                Mode::Filter => match key.code {
+                    KeyCode::Char(c) => {
+                        input_buffer.push(c);
                     }
-                    if input_buffer.trim() != filtered_items[selected] {
+                    KeyCode::Backspace => {
+                        input_buffer.pop();
+                    }
+                    KeyCode::Enter => {
                         input_buffer.clone_from(&filtered_items[selected]);
+                        mode = Mode::Normal;
                     }
-                    // Event::FocusGained => todo!(),
-                    // Event::FocusLost => todo!(),
-                    // Event::Mouse(_) => todo!(),
-                    // Event::Paste(_) => todo!(),
-                    // Event::Resize(_, _) => todo!(),
-                }
-                //     }
-                // }
-                //
-                // if let Event::Key(key) = event::read()? {
-                //     if key.code == KeyCode::Char('q') {
-                //         break;
-                KeyCode::Backspace => {
-                    input_buffer.pop();
-                }
-                KeyCode::Tab => {
-                    if selected == 0 {
-                        selected = filtered_items.len();
+                    KeyCode::Esc => {
+                        input_buffer.clear();
+                        mode = Mode::Normal;
                     }
-                    selected -= 1;
-                    if selected > filtered_items.len() -1 {
-                        selected = filtered_items.len() - 1;
-                    }
-                    // if key.modifiers.contains(KeyModifiers::SHIFT) {
-                    // }
-                }
-                _ => {}
+                    _ => {}
+                },
             }
 
             // Update filtered items based on the input buffer
-            let filters: Vec<String> = input_buffer
-                .split_whitespace()
-                .map(|s| s.to_lowercase())
-                .collect();
-            let mut current: Vec<String> =
-            items.iter().map(|item| item.replace("'\n'", "")).collect();
+            if mode == Mode::Filter {
+                let filters: Vec<String> = input_buffer
+                    .split_whitespace()
+                    .map(|s| s.to_lowercase())
+                    .collect();
+                let mut current: Vec<String> =
+                items.iter().map(|item| item.replace('\n', "")).collect();
 
-            for filter in filters {
-                current.retain(|item| item.to_lowercase().contains(&filter));
+                for filter in filters {
+                    current.retain(|item| item.to_lowercase().contains(&filter));
+                }
+
+                // set selected to 0 when list is empty
+                if filtered_items.len() != current.len() && !filtered_items.is_empty() {
+                    selected = 0;
+                }
+
+                filtered_items = current;
+                list_state.select(Some(selected));
             }
-
-            // if input_buffer.trim().is_empty() {
-            //     current.push(String::new());
-            // }
-
-            if filtered_items.len() != current.len() && !filtered_items.is_empty() {
-                selected = current.len() - 1;
-            }
-
-            filtered_items = current;
-
         }
     }
 
@@ -214,7 +239,7 @@ mod tests {
     use std::thread;
 
     #[test]
-    fn test_run_app_exits() {
+    fn test_run_app_exits_on_q() {
         // Create a TestBackend and Terminal
         let backend = TestBackend::new(80, 24);
         let mut terminal = Terminal::new(backend).unwrap();
@@ -222,16 +247,13 @@ mod tests {
         // Create an event channel
         let (event_sender, event_receiver) = mpsc::channel();
 
-        // Simulate pressing ':q'
-        let events = vec![
-            Event::Key(KeyEvent { code: KeyCode::Char('e'), modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
-            Event::Key(KeyEvent { code: KeyCode::Char('x'), modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
-            Event::Key(KeyEvent { code: KeyCode::Char('i'), modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
-            Event::Key(KeyEvent { code: KeyCode::Char('t'), modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
-            Event::Key(KeyEvent { code: KeyCode::Tab, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
-            Event::Key(KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
-            Event::Key(KeyEvent { code: KeyCode::Enter, modifiers: KeyModifiers::NONE, kind: KeyEventKind::Press, state: KeyEventState::NONE, }),
-        ];
+        // Simulate pressing 'exit'
+        let events = vec![Event::Key(KeyEvent {
+        code: KeyCode::Char('q'),
+        modifiers: KeyModifiers::NONE,
+        kind: KeyEventKind::Press,
+        state: KeyEventState::NONE,
+        })];
 
         thread::spawn(move || {
             for event in events {

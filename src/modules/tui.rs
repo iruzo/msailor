@@ -25,6 +25,7 @@ use std::process::exit;
 enum Mode {
     Normal,
     Filter,
+    Help,
 }
 
 pub fn run_app<B: Backend>(
@@ -107,6 +108,9 @@ pub fn run_app<B: Backend>(
             if mode == Mode::Filter {
                 title = "FILTER";
             }
+            if mode == Mode::Help {
+                title = "HELP";
+            }
             let bottom_paragraph = Paragraph::new(Text::from(input_buffer.as_str()))
                 .block(Block::default().borders(Borders::ALL));
             f.render_widget(bottom_paragraph, vertical_chunks[1]);
@@ -159,6 +163,10 @@ pub fn run_app<B: Backend>(
                         mode = Mode::Filter;
                         input_buffer.clear()
                     }
+                    KeyCode::Char('?') => {
+                        mode = Mode::Help;
+                        input_buffer.clear();
+                    }
                     KeyCode::Char('q') => {
                         break;
                     }
@@ -180,6 +188,11 @@ pub fn run_app<B: Backend>(
                         mode = Mode::Normal;
                     }
                     _ => {}
+                },
+                Mode::Help => if let KeyCode::Char('q') = key.code {
+                    input_buffer.clear();
+                    mode = Mode::Normal;
+                    filtered_items.clone_from(&items);
                 },
             }
 
@@ -204,6 +217,26 @@ pub fn run_app<B: Backend>(
                 filtered_items = current;
                 list_state.select(Some(selected));
             }
+
+            // Update filtered items based on the input buffer
+            if mode == Mode::Help {
+
+                let help: Vec<String> = vec![
+                    String::from("q   => Exit"),
+                    String::from("k   => Go up"),
+                    String::from("j   => Go down"),
+                    String::from("g   => Go to top"),
+                    String::from("G   => Go to bottom"),
+                    String::from("/   => Enter filter mode"),
+                    String::from("Esc => Enter normal mode from filter mode"),
+                ];
+
+                selected = 0;
+
+                filtered_items = help;
+                list_state.select(Some(selected));
+            }
+
         }
     }
 

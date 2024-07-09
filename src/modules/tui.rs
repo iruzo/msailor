@@ -17,6 +17,8 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Terminal,
 };
+use amp::Application;
+use amp::Error;
 use std::collections::HashMap;
 use std::io;
 use std::process::exit;
@@ -24,6 +26,7 @@ use std::process::exit;
 #[derive(PartialEq)]
 enum Mode {
     Normal,
+    Command,
     Filter,
     Help,
 }
@@ -34,6 +37,7 @@ pub fn run_app<B: Backend>(
 ) -> Result<(), io::Error> {
     let mut input_buffer = String::new();
     let mut mode = Mode::Normal;
+    let mut edit = false;
     let paths = path::get_default_paths();
     let config: HashMap<String, String> = match config::parse_config_file(
         paths.config_file_path.as_str(),
@@ -105,21 +109,48 @@ pub fn run_app<B: Backend>(
             if mode == Mode::Normal {
                 title = "NORMAL";
             }
+            if mode == Mode::Command {
+                title = "COMMAND";
+            }
             if mode == Mode::Filter {
                 title = "FILTER";
             }
             if mode == Mode::Help {
                 title = "HELP";
             }
-            let bottom_paragraph = Paragraph::new(Text::from(input_buffer.as_str()))
-                .block(Block::default().borders(Borders::ALL));
-            f.render_widget(bottom_paragraph, vertical_chunks[1]);
-
-            // Right panel
-            let right_panel = Block::default()
-                // .title("list")
-                .borders(Borders::ALL);
-            f.render_widget(right_panel, chunks[1]);
+            if edit {
+                // TODO run editor
+                // let args: Vec<String> = vec![
+                //     String::from("a.txt")
+                // ];
+                // if let Some(e) = Application::new(&args).and_then(|mut app| app.run()).err() {
+                //     // Print the proximate/contextual error.
+                //     eprintln!("error: {}", &e);
+                //
+                //     // Print the chain of other errors that led to the proximate error.
+                //     for error in e.iter().skip(1) {
+                //         eprintln!("caused by: {}", error);
+                //     }
+                //
+                //     // Print the backtrace, if available.
+                //     if let Some(backtrace) = &e.backtrace() {
+                //         eprintln!("backtrace: {:?}", backtrace);
+                //     }
+                //
+                //     // Exit with an error code.
+                //     ::std::process::exit(1);
+                // }
+                edit = false;
+            } else {
+                let bottom_paragraph = Paragraph::new(Text::from(input_buffer.as_str()))
+                    .block(Block::default().title(title).borders(Borders::ALL));
+                f.render_widget(bottom_paragraph, vertical_chunks[1]);
+                // Right panel
+                let right_panel = Block::default()
+                    // .title("list")
+                    .borders(Borders::ALL);
+                f.render_widget(right_panel, chunks[1]);
+            }
         })?;
 
         // Handle input
@@ -139,7 +170,13 @@ pub fn run_app<B: Backend>(
                             //execute
                             filtered_items.clone_from(&items);
                             input_buffer.clear();
+                        } else {
+                            input_buffer.clone_from(&filtered_items[selected]);
                         }
+                    }
+                    KeyCode::Char('e') => {
+                        // edit selected
+                        edit = true;
                     }
                     KeyCode::Char('j') => {
                         if selected < filtered_items.len() - 1 {
@@ -163,12 +200,40 @@ pub fn run_app<B: Backend>(
                         mode = Mode::Filter;
                         input_buffer.clear()
                     }
+                    KeyCode::Char(':') => {
+                        mode = Mode::Command;
+                        input_buffer.clear();
+                    }
                     KeyCode::Char('?') => {
                         mode = Mode::Help;
                         input_buffer.clear();
                     }
                     KeyCode::Char('q') => {
                         break;
+                    }
+                    KeyCode::Esc => {
+                        filtered_items.clone_from(&items);
+                        selected = filtered_items.len() - 1;
+                        list_state.select(Some(selected));
+                        input_buffer.clear();
+                    }
+                    _ => {}
+                },
+                Mode::Command => match key.code {
+                    KeyCode::Char(c) => {
+                        input_buffer.push(c);
+                    }
+                    KeyCode::Backspace => {
+                        input_buffer.pop();
+                    }
+                    KeyCode::Enter => {
+                        // execute
+                        mode = Mode::Normal;
+                    }
+                    KeyCode::Esc => {
+                        filtered_items.clone_from(&items);
+                        input_buffer.clear();
+                        mode = Mode::Normal;
                     }
                     _ => {}
                 },
@@ -189,11 +254,13 @@ pub fn run_app<B: Backend>(
                     }
                     _ => {}
                 },
-                Mode::Help => if let KeyCode::Char('q') = key.code {
-                    input_buffer.clear();
-                    mode = Mode::Normal;
-                    filtered_items.clone_from(&items);
-                },
+                Mode::Help => {
+                    if let KeyCode::Esc = key.code {
+                        input_buffer.clear();
+                        mode = Mode::Normal;
+                        filtered_items.clone_from(&items);
+                    }
+                }
             }
 
             // Update filtered items based on the input buffer
@@ -218,25 +285,19 @@ pub fn run_app<B: Backend>(
                 list_state.select(Some(selected));
             }
 
-            // Update filtered items based on the input buffer
-            if mode == Mode::Help {
-
-                let help: Vec<String> = vec![
-                    String::from("q   => Exit"),
-                    String::from("k   => Go up"),
-                    String::from("j   => Go down"),
-                    String::from("g   => Go to top"),
-                    String::from("G   => Go to bottom"),
-                    String::from("/   => Enter filter mode"),
-                    String::from("Esc => Enter normal mode from filter mode"),
-                ];
-
+            // Command mode menu content
+            if mode == Mode::Command {
                 selected = 0;
-
-                filtered_items = help;
+                filtered_items = menu::generate_command_menu_content();
                 list_state.select(Some(selected));
             }
 
+            // Help mode menu content
+            if mode == Mode::Help {
+                selected = 0;
+                filtered_items = menu::generate_help_menu_content();
+                list_state.select(Some(selected));
+            }
         }
     }
 

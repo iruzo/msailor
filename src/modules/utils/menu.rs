@@ -2,6 +2,31 @@ use std::fs;
 use std::io::{self, BufRead};
 use std::path::Path;
 
+pub fn generate_help_menu_content() -> Vec<String> {
+    vec![
+        String::from("q   => Exit"),
+        String::from("e   => Edit"),
+        String::from("k   => Go up"),
+        String::from("j   => Go down"),
+        String::from("g   => Go to top"),
+        String::from("G   => Go to bottom"),
+        String::from("s   => Sync plugins"),
+        String::from("S   => Sync repositories"),
+        String::from("/   => Enter filter mode"),
+        String::from("Esc => Go back to normal mode from any other mode"),
+    ]
+}
+
+pub fn generate_command_menu_content() -> Vec<String> {
+    vec![
+        String::from("create-sample-repo"),
+        String::from("config-edit"),
+        String::from("history-edit"),
+        String::from("list-add"),
+        String::from("indexwp"),
+    ]
+}
+
 pub fn generate_menu_content(
     sync_path: &str,
     list_path: &str,
@@ -72,27 +97,14 @@ pub fn generate_menu_content(
         }
     }
 
-    // Add options to menu
-    menu_content.extend_from_slice(&[
-        "[command] exit".to_string(),
-        "[command] help".to_string(),
-    ]);
     if cfg!(target_os = "windows") {
-        menu_content.push("[command] update".to_string());
+        // TODO: Implement an update method so windows users can update the app
+        // menu_content.push("[command] update".to_string());
     }
+
     menu_content.extend_from_slice(&[
-        "[command] create-sample-repo".to_string(),
-        "[command] sync-repos".to_string(),
-        "[command] sync-plugs".to_string(),
-        "[command] push".to_string(),
-        "[command] config-edit".to_string(),
-        "[command] history-edit".to_string(),
-        "[command] quickmark-add".to_string(),
-        "[command] quickmark-edit".to_string(),
-        "[command] list-add".to_string(),
-        "[command] list-edit".to_string(),
-        "[command] list-del".to_string(),
-        "[command] indexwp".to_string(),
+        "[config]".to_string(),
+        "[history]".to_string(),
     ]);
 
     // remove empty lines
@@ -166,8 +178,8 @@ mod tests {
         assert!(result.contains(&"[quickmark] quickmark2".to_string()));
         assert!(result.contains(&"[file] file1".to_string()));
         assert!(result.contains(&"[plug] :plugin1".to_string()));
-        assert!(result.contains(&"[command] help".to_string()));
-        assert!(result.contains(&"[command] exit".to_string()));
+        assert!(result.contains(&"[config]".to_string()));
+        assert!(result.contains(&"[history]".to_string()));
 
         // Clean up
         fs::remove_dir_all(&sync_path).unwrap();

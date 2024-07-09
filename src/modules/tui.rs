@@ -1,6 +1,8 @@
 use super::utils::config;
 use super::utils::menu;
 use super::utils::path;
+use amp::Application;
+use amp::Error;
 use crossterm::event;
 use crossterm::{
     // event::{Event, KeyCode, KeyModifiers},
@@ -17,8 +19,6 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Terminal,
 };
-use amp::Application;
-use amp::Error;
 use std::collections::HashMap;
 use std::io;
 use std::process::exit;
@@ -88,66 +88,69 @@ pub fn run_app<B: Backend>(
                         .as_ref(),
                 )
                 .split(chunks[0]);
-
-            // Main box
-            let main_box = Block::default()
-                // .title("Menu")
-                .borders(Borders::ALL);
-            let list_items: Vec<ListItem> = filtered_items
-                .iter()
-                .map(|item| ListItem::new(Span::raw(item.clone())))
-                .collect();
-            let list = List::new(list_items).block(main_box).highlight_style(
-                Style::default()
-                    // .bg(Color::Blue)
-                    .fg(Color::LightYellow)
-                    .add_modifier(Modifier::BOLD),
-            );
-            f.render_stateful_widget(list, vertical_chunks[0], &mut list_state);
-
-            // Bottom bar
-            if mode == Mode::Normal {
-                title = "NORMAL";
-            }
-            if mode == Mode::Command {
-                title = "COMMAND";
-            }
-            if mode == Mode::Filter {
-                title = "FILTER";
-            }
-            if mode == Mode::Help {
-                title = "HELP";
-            }
             if edit {
-                // TODO run editor
-                // let args: Vec<String> = vec![
-                //     String::from("a.txt")
-                // ];
-                // if let Some(e) = Application::new(&args).and_then(|mut app| app.run()).err() {
-                //     // Print the proximate/contextual error.
-                //     eprintln!("error: {}", &e);
-                //
-                //     // Print the chain of other errors that led to the proximate error.
-                //     for error in e.iter().skip(1) {
-                //         eprintln!("caused by: {}", error);
-                //     }
-                //
-                //     // Print the backtrace, if available.
-                //     if let Some(backtrace) = &e.backtrace() {
-                //         eprintln!("backtrace: {:?}", backtrace);
-                //     }
-                //
-                //     // Exit with an error code.
-                //     ::std::process::exit(1);
-                // }
+                // TODO fix problem that makes editor start without buffer and crashing, analyze if
+                // really is beacause it is not finidng a file to create a buffer
+                let args: Vec<String> = vec![String::from("/var/home/amnesia/containers.sh")];
+                // Check if the file exists before running the editor
+                if std::path::Path::new(&args[0]).exists() {
+                    if let Some(e) = Application::new(&args).and_then(|mut app| app.run()).err() {
+                        // Print the proximate/contextual error.
+                        eprintln!("error: {}", &e);
+
+                        // Print the chain of other errors that led to the proximate error.
+                        for error in e.iter().skip(1) {
+                            eprintln!("caused by: {}", error);
+                        }
+
+                        // Print the backtrace, if available.
+                        if let Some(backtrace) = &e.backtrace() {
+                            eprintln!("backtrace: {:?}", backtrace);
+                        }
+
+                        // Exit with an error code.
+                        ::std::process::exit(1);
+                    }
+                } else {
+                    eprintln!("error: File not found: {}", &args[0]);
+                }
                 edit = false;
             } else {
+                // Main box
+                let main_box = Block::default()
+                    // .title("Menu")
+                    .borders(Borders::ALL);
+                let list_items: Vec<ListItem> = filtered_items
+                    .iter()
+                    .map(|item| ListItem::new(Span::raw(item.clone())))
+                    .collect();
+                let list = List::new(list_items).block(main_box).highlight_style(
+                    Style::default()
+                        // .bg(Color::Blue)
+                        .fg(Color::LightYellow)
+                        .add_modifier(Modifier::BOLD),
+                );
+                f.render_stateful_widget(list, vertical_chunks[0], &mut list_state);
+
+                // Bottom bar
+                if mode == Mode::Normal {
+                    title = "NORMAL";
+                }
+                if mode == Mode::Command {
+                    title = "COMMAND";
+                }
+                if mode == Mode::Filter {
+                    title = "FILTER";
+                }
+                if mode == Mode::Help {
+                    title = "HELP";
+                }
                 let bottom_paragraph = Paragraph::new(Text::from(input_buffer.as_str()))
                     .block(Block::default().title(title).borders(Borders::ALL));
                 f.render_widget(bottom_paragraph, vertical_chunks[1]);
                 // Right panel
                 let right_panel = Block::default()
-                    // .title("list")
+                    .title("Current playlist")
                     .borders(Borders::ALL);
                 f.render_widget(right_panel, chunks[1]);
             }
@@ -362,3 +365,4 @@ mod tests {
         assert!(result.is_ok());
     }
 }
+

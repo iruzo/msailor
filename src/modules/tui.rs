@@ -22,7 +22,7 @@ use ratatui::{
 use std::collections::HashMap;
 use std::io;
 use std::process::exit;
-use std::path::{PathBuf, MAIN_SEPARATOR};
+use std::path::MAIN_SEPARATOR;
 
 #[derive(PartialEq)]
 enum Mode {

@@ -20,8 +20,6 @@ pub fn generate_help_menu_content() -> Vec<String> {
 pub fn generate_command_menu_content() -> Vec<String> {
     vec![
         String::from("create-sample-repo"),
-        String::from("config-edit"),
-        String::from("history-edit"),
         String::from("list-add"),
         String::from("indexwp"),
     ]

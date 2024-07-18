@@ -1,8 +1,8 @@
 use super::utils::config;
+use super::utils::envv;
 use super::utils::menu;
 use super::utils::path;
-use amp::Application;
-use amp::Error;
+use super::utils::edit;
 use crossterm::event;
 use crossterm::{
     // event::{Event, KeyCode, KeyModifiers},
@@ -22,6 +22,7 @@ use ratatui::{
 use std::collections::HashMap;
 use std::io;
 use std::process::exit;
+use std::path::{PathBuf, MAIN_SEPARATOR};
 
 #[derive(PartialEq)]
 enum Mode {
@@ -29,6 +30,16 @@ enum Mode {
     Command,
     Filter,
     Help,
+}
+
+fn open_editor(config: HashMap<String, String>, path: &str) {
+    if config.contains_key("editor") {
+        edit::edit(Some(config["editor"].as_str()), None, path);
+    } else if envv::get_env_vars().get_key_value("EDITOR").is_some() {
+        edit::edit(None, Some(envv::get_env_vars().get_key_value("EDITOR").unwrap().1.as_str()), path);
+    } else {
+        edit::edit(None, None, path);
+    }
 }
 
 pub fn run_app<B: Backend>(
@@ -40,7 +51,7 @@ pub fn run_app<B: Backend>(
     let mut edit = false;
     let paths = path::get_default_paths();
     let config: HashMap<String, String> = match config::parse_config_file(
-        paths.config_file_path.as_str(),
+        paths.config_file.as_str(),
         Some(path::get_default_paths().to_hash_map()),
     ) {
             Ok(config_map) => config_map,
@@ -51,10 +62,9 @@ pub fn run_app<B: Backend>(
         };
     let config_copy = config.clone();
     let items: Vec<String> = menu::generate_menu_content(
-        config_copy["sync_path"].as_str(),
-        config_copy["list_path"].as_str(),
-        config_copy["config_path"].as_str(),
-        config_copy["plug_path"].as_str(),
+        config_copy["path.sync"].as_str(),
+        config_copy["path.list"].as_str(),
+        config_copy["path.config_dir"].as_str()
     )?;
     let mut filtered_items = items.clone();
     let mut selected = filtered_items.len() - 1;
@@ -63,6 +73,28 @@ pub fn run_app<B: Backend>(
     list_state.select(Some(selected));
 
     loop {
+
+        if edit {
+            terminal.clear().unwrap();
+            disable_raw_mode()?;
+
+            match filtered_items[selected].as_str() {
+                s if s.contains("[list]") => open_editor(config.clone(), format!("{}{}{}", config_copy["path.list"], MAIN_SEPARATOR, s.split_once("[list]").map(|s| s.1.trim()).unwrap()).as_str()),
+                s if s.contains("[history]") => open_editor(config.clone(), config_copy["path.history"].as_str()),
+                s if s.contains("[config]") => open_editor(config.clone(), config_copy["path.config_file"].as_str()),
+                s if s.contains("[quickmark]") => open_editor(config.clone(), config_copy["path.quickmarks"].as_str()),
+                _ => {
+                    // Handle the else case here
+                }
+            }
+
+            enable_raw_mode()?;
+            // Clear the screen
+            terminal.clear().unwrap();
+
+            edit = false;
+        }
+
         terminal.draw(|f| {
             let size = f.size();
 
@@ -88,72 +120,44 @@ pub fn run_app<B: Backend>(
                         .as_ref(),
                 )
                 .split(chunks[0]);
-            if edit {
-                // TODO fix problem that makes editor start without buffer and crashing, analyze if
-                // really is beacause it is not finidng a file to create a buffer
-                let args: Vec<String> = vec![String::from("/var/home/amnesia/containers.sh")];
-                // Check if the file exists before running the editor
-                if std::path::Path::new(&args[0]).exists() {
-                    if let Some(e) = Application::new(&args).and_then(|mut app| app.run()).err() {
-                        // Print the proximate/contextual error.
-                        eprintln!("error: {}", &e);
 
-                        // Print the chain of other errors that led to the proximate error.
-                        for error in e.iter().skip(1) {
-                            eprintln!("caused by: {}", error);
-                        }
+            // Main box
+            let main_box = Block::default()
+                // .title("Menu")
+                .borders(Borders::ALL);
+            let list_items: Vec<ListItem> = filtered_items
+                .iter()
+                .map(|item| ListItem::new(Span::raw(item.clone())))
+                .collect();
+            let list = List::new(list_items).block(main_box).highlight_style(
+                Style::default()
+                    // .bg(Color::Blue)
+                    .fg(Color::LightYellow)
+                    .add_modifier(Modifier::BOLD),
+            );
+            f.render_stateful_widget(list, vertical_chunks[0], &mut list_state);
 
-                        // Print the backtrace, if available.
-                        if let Some(backtrace) = &e.backtrace() {
-                            eprintln!("backtrace: {:?}", backtrace);
-                        }
-
-                        // Exit with an error code.
-                        ::std::process::exit(1);
-                    }
-                } else {
-                    eprintln!("error: File not found: {}", &args[0]);
-                }
-                edit = false;
-            } else {
-                // Main box
-                let main_box = Block::default()
-                    // .title("Menu")
-                    .borders(Borders::ALL);
-                let list_items: Vec<ListItem> = filtered_items
-                    .iter()
-                    .map(|item| ListItem::new(Span::raw(item.clone())))
-                    .collect();
-                let list = List::new(list_items).block(main_box).highlight_style(
-                    Style::default()
-                        // .bg(Color::Blue)
-                        .fg(Color::LightYellow)
-                        .add_modifier(Modifier::BOLD),
-                );
-                f.render_stateful_widget(list, vertical_chunks[0], &mut list_state);
-
-                // Bottom bar
-                if mode == Mode::Normal {
-                    title = "NORMAL";
-                }
-                if mode == Mode::Command {
-                    title = "COMMAND";
-                }
-                if mode == Mode::Filter {
-                    title = "FILTER";
-                }
-                if mode == Mode::Help {
-                    title = "HELP";
-                }
-                let bottom_paragraph = Paragraph::new(Text::from(input_buffer.as_str()))
-                    .block(Block::default().title(title).borders(Borders::ALL));
-                f.render_widget(bottom_paragraph, vertical_chunks[1]);
-                // Right panel
-                let right_panel = Block::default()
-                    .title("Current playlist")
-                    .borders(Borders::ALL);
-                f.render_widget(right_panel, chunks[1]);
+            // Bottom bar
+            if mode == Mode::Normal {
+                title = "NORMAL";
             }
+            if mode == Mode::Command {
+                title = "COMMAND";
+            }
+            if mode == Mode::Filter {
+                title = "FILTER";
+            }
+            if mode == Mode::Help {
+                title = "HELP";
+            }
+            let bottom_paragraph = Paragraph::new(Text::from(input_buffer.as_str()))
+                .block(Block::default().title(title).borders(Borders::ALL));
+            f.render_widget(bottom_paragraph, vertical_chunks[1]);
+            // Right panel
+            let right_panel = Block::default()
+                .title("Current playlist")
+                .borders(Borders::ALL);
+            f.render_widget(right_panel, chunks[1]);
         })?;
 
         // Handle input

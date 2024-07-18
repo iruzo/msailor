@@ -26,13 +26,13 @@ pub async fn tmp() {
     ];
 
     // // Call sync_repos function
-    let sync_path = default_paths.sync_path;
+    let sync_path = default_paths.sync_dir;
     if let Err(e) = utils::git::sync_repos(repos.clone(), &sync_path).await {
         eprintln!("Error during repo sync: {}", e);
     }
 
     // Define the plug path
-    let plug_path = default_paths.plug_path;
+    let plug_path = default_paths.plug_dir;
 
     // Call sync_plug function
     if let Err(e) = utils::git::sync_repos(repos, &plug_path).await {
@@ -62,10 +62,9 @@ pub async fn tmp() {
     let sync_path = "/path/to/sync";
     let list_path = "/path/to/list";
     let config_path = "/path/to/config";
-    let plug_path = "/path/to/plug";
 
     // Generate menu content
-    match utils::menu::generate_menu_content(sync_path, list_path, config_path, plug_path) {
+    match utils::menu::generate_menu_content(sync_path, list_path, config_path) {
         Ok(menu_content) => {
             for item in menu_content {
                 println!("{}", item);

@@ -35,6 +35,8 @@ enum Mode {
 fn open_editor(config: HashMap<String, String>, path: &str) {
     if config.contains_key("editor") {
         edit::edit(Some(config["editor"].as_str()), None, path);
+    } else if envv::get_env_vars().get_key_value("VISUAL").is_some() {
+        edit::edit(None, Some(envv::get_env_vars().get_key_value("VISUAL").unwrap().1.as_str()), path);
     } else if envv::get_env_vars().get_key_value("EDITOR").is_some() {
         edit::edit(None, Some(envv::get_env_vars().get_key_value("EDITOR").unwrap().1.as_str()), path);
     } else {

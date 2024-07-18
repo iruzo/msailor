@@ -4,7 +4,8 @@ use std::env;
 pub fn get_env_vars() -> HashMap<String, String> {
     let keys = [
         "MSAILOR_TEST_ENV_VAR",
-        "EDITOR"
+        "VISUAL",
+        "EDITOR",
     ];
     let mut env_vars = HashMap::new();
 

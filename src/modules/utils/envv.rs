@@ -2,7 +2,10 @@ use std::collections::HashMap;
 use std::env;
 
 pub fn get_env_vars() -> HashMap<String, String> {
-    let keys = ["EDITOR"];
+    let keys = [
+        "MSAILOR_TEST_ENV_VAR",
+        "EDITOR"
+    ];
     let mut env_vars = HashMap::new();
 
     for key in &keys {

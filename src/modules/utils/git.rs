@@ -98,10 +98,13 @@ mod tests {
 
         // Define a list of repositories
         let repos = vec![
-            "https://github.com/libgit2/libgit2",
+            // "https://github.com/libgit2/libgit2",
             "https://github.com/catppuccin/catppuccin",
             "https://github.com/iruzo/pxalarm",
+            "https://github.com/iruzo/pxmenu",
         ];
+
+        // TODO increase performance to download git repositories
 
         // Call sync_repos
         let result = sync_repos(repos, sync_path.to_str().unwrap()).await;
@@ -110,9 +113,10 @@ mod tests {
         assert!(result.is_ok());
 
         // Check if the repositories were cloned
-        assert!(sync_path.join("libgit2").exists());
+        // assert!(sync_path.join("libgit2").exists());
         assert!(sync_path.join("catppuccin").exists());
         assert!(sync_path.join("pxalarm").exists());
+        assert!(sync_path.join("pxmenu").exists());
 
         // Clean up
         fs::remove_dir_all(&sync_path).unwrap();

@@ -81,7 +81,7 @@ pub fn run_app<B: Backend>(
             disable_raw_mode()?;
 
             match filtered_items[selected].as_str() {
-                s if s.contains("[list]") => open_editor(config.clone(), format!("{}{}{}", config_copy["path.list"], MAIN_SEPARATOR, s.split_once("[list]").map(|s| s.1.trim()).unwrap()).as_str()),
+                s if s.contains("[list]") => open_editor(config.clone(), format!("{}{}{}", config_copy["path.list"], MAIN_SEPARATOR, s.trim_start_matches("[list]").trim()).as_str()),
                 s if s.contains("[history]") => open_editor(config.clone(), config_copy["path.history"].as_str()),
                 s if s.contains("[config]") => open_editor(config.clone(), config_copy["path.config_file"].as_str()),
                 s if s.contains("[quickmark]") => open_editor(config.clone(), config_copy["path.quickmarks"].as_str()),

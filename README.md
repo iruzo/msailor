@@ -5,3 +5,7 @@
 Inspired by [Neovim](https://github.com/neovim/neovim), which successfully transformed VIM into a fully functional IDE and beyond, Media Sailor aims to bring similar improvements to your multimedia experience.
 
 **WARNING:** This project is currently under heavy development. The `cargo run` command is not yet functional, and all testing is being conducted via `cargo test`.
+
+## Build
+- dependencies
+    - openssl
